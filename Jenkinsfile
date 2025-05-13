@@ -28,7 +28,7 @@ pipeline {
 
             # Run Ansible playbook from Ansible server over SSH via tunnel
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p 22 ubuntu@$ANSIBLE_PRIVATE_IP \
-              "ansible-playbook //ansible/playbooks/stage.yml"
+              "ansible-playbook /etc/ansible/playbooks/stage.yml"
 
             echo "✅ Staging deployment complete."
           '''
@@ -85,7 +85,7 @@ pipeline {
 
             # Run Ansible playbook from Ansible server over SSH via tunnel
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p 22 ubuntu@$ANSIBLE_PRIVATE_IP \
-              "ansible-playbook /home/ubuntu/playbooks/prod.yml"
+              "ansible-playbook /etc/ansible/playbooks/playbooks/prod.yml"
 
             echo "✅ Production deployment complete."
           '''
