@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    STAGE_SITE = 'https://stage.bolatitoadegoroye.top.com.ng'
+    STAGE_SITE = 'https://stage.bolatitoadegoroye.top'
     AWS_REGION = 'eu-west-2'
   }
 
