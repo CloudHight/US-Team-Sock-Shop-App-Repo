@@ -1,9 +1,9 @@
 pipeline {
   agent any
   environment {
-    BASTION_INSTANCE_ID = credentials('bastion-instance-id')
+    BASTION_INSTANCE_ID = credentials('bastion-id')
     ANSIBLE_IP = credentials('ansible-ip')  // Keeping IP since we need it for port 22 connection
-    AWS_REGION = 'us-east-1'
+    AWS_REGION = 'eu-west-2'
   }
   stages {
     stage ('Deploying to Stage Environment') {
@@ -27,7 +27,7 @@ pipeline {
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
                     ec2-user@${ANSIBLE_IP} \
-                    "ansible-playbook /home/ubuntu/playbooks/stage.yml"
+                    "ansible-playbook /etc/ansible/playbooks/stage.yml"
               '''
             }
             
@@ -80,7 +80,7 @@ pipeline {
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
                     ec2-user@${ANSIBLE_IP} \
-                    "ansible-playbook /home/ubuntu/playbooks/prod.yml"
+                    "ansible-playbook /etc/ansible/playbooks/prod.yml"
               '''
             }
             
