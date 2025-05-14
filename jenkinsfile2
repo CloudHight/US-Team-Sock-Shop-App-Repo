@@ -24,7 +24,7 @@ pipeline {
             sshagent(['ansible-key']) {
               sh '''
                 ssh -o StrictHostKeyChecking=no \
-                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
+                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
                     ubuntu@${ANSIBLE_IP} \
                     "ansible-playbook /etc/ansible/playbooks/stage.yml"
               '''
@@ -75,7 +75,7 @@ pipeline {
             sshagent(['ansible-key']) {
               sh '''
                 ssh -o StrictHostKeyChecking=no \
-                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
+                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
                     ubuntu@${ANSIBLE_IP} \
                     "ansible-playbook /etc/ansible/playbooks/prod.yml"
               '''
