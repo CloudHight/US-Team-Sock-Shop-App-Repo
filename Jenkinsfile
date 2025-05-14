@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     STAGE_SITE = 'https://stage.bolatitoadegoroye.top'
-    AWS_REGION = 'eu-west-2'
+    AWS_REGION = 'us-east-2'
   }
 
   stages {
