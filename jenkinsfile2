@@ -25,7 +25,7 @@ pipeline {
               sh '''
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
-                    ec2-user@${ANSIBLE_IP} \
+                    ubuntu@${ANSIBLE_IP} \
                     "ansible-playbook /etc/ansible/playbooks/stage.yml"
               '''
             }
@@ -61,7 +61,6 @@ pipeline {
     
     stage ('Deploying to Prod Environment') {
       steps {
-        withAWS(credentials: 'aws-credentials') {
           script {
             sh '''
               aws ssm start-session \
@@ -77,14 +76,13 @@ pipeline {
               sh '''
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ec2-user@localhost -p 9999" \
-                    ec2-user@${ANSIBLE_IP} \
+                    ubuntu@${ANSIBLE_IP} \
                     "ansible-playbook /etc/ansible/playbooks/prod.yml"
               '''
             }
             
             sh 'pkill -f "aws ssm start-session"'
           }
-        }
       }
     }
     
