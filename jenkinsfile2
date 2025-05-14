@@ -38,7 +38,7 @@ pipeline {
       }
     }
     
-    stage ('Slack Notification') {
+    stage ('Slack Notification for prod') {
       steps {
         slackSend channel: 'Cloudhight', message: 'New Stage Deployment', teamDomain: '24th-february-sock-shop-kubeadm-project', tokenCredentialId: 'slack'
       }
