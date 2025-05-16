@@ -46,7 +46,7 @@ pipeline {
       steps {
         sh '''
           chmod 777 $(pwd)
-          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://stage.bolatitoadegoroye.top -g gen.conf -r testreport.html || true
+          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://stage.merijourney.space -g gen.conf -r testreport.html || true
         '''
       }
     }
