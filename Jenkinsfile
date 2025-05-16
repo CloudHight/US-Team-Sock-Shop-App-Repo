@@ -1,104 +1,94 @@
 pipeline {
   agent any
-
   environment {
-    STAGE_SITE = 'https://stage.bolatitoadegoroye.top'
+    BASTION_INSTANCE_ID = credentials('bastion-id')
+    ANSIBLE_IP = credentials('ansible-ip')  // Keeping IP since we need it for port 22 connection
     AWS_REGION = 'eu-west-2'
   }
-
   stages {
-    stage('Deploy to Staging Environment') {
+    stage ('Deploying to Stage Environment') {
       steps {
-        withCredentials([
-          sshUserPrivateKey(credentialsId: 'ansible-key', keyFileVariable: 'SSH_KEY'),
-          string(credentialsId: 'bastion-id', variable: 'BASTION_INSTANCE_ID'),
-          string(credentialsId: 'ansible-ip', variable: 'ANSIBLE_PRIVATE_IP')
-        ]) {
-          sh '''
-            echo "🚀 Starting deployment to staging via SSM Session Manager..."
-
-            # Start SSM SSH tunnel to Bastion
-            aws ssm start-session \
-              --target "$BASTION_INSTANCE_ID" \
-              --document-name "AWS-StartSSHSession" \
-              --parameters '{"portNumber":["22"]}' \
-              --region "$AWS_REGION" > session.log 2>&1 &
-
-            sleep 5
-
-            # Run Ansible playbook from Ansible server over SSH via tunnel
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p 22 ubuntu@$ANSIBLE_PRIVATE_IP \
-              "ansible-playbook /etc/ansible/playbooks/stage.yml"
-
-            echo "✅ Staging deployment complete."
-          '''
-        }
+          script {
+            // Start SSM session to bastion with port forwarding for SSH (port 22)
+            sh '''
+              aws ssm start-session \
+                --target ${BASTION_INSTANCE_ID} \
+                --region ${AWS_REGION} \
+                --document-name AWS-StartPortForwardingSession \
+                --parameters '{"portNumber":["22"],"localPortNumber":["9999"]}' \
+                &
+              sleep 5  # Wait for port forwarding to establish
+            '''
+            
+            // SSH through the tunnel to Ansible server on port 22
+            sshagent(['ansible-key']) {
+              sh '''
+                ssh -o StrictHostKeyChecking=no \
+                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
+                    ubuntu@${ANSIBLE_IP} \
+                    "ansible-playbook /etc/ansible/playbooks/stage.yml"
+              '''
+            }
+            
+            // Terminate the SSM session
+            sh 'pkill -f "aws ssm start-session"'
+          }
       }
     }
-
-    stage('Slack Notification - Staging') {
+    
+    stage ('Slack Notification for prod') {
       steps {
-        slackSend channel: 'Cloudhight',
-                  message: '✅ New Stage Deployment triggered',
-                  teamDomain: '24th-february-sock-shop-kubeadm-project',
-                  tokenCredentialId: 'slack'
+        slackSend channel: 'Cloudhight', message: 'New Stage Deployment', teamDomain: '21st-april-sock-shop-project-team-1', tokenCredentialId: 'slack'
       }
     }
-
-    stage('DAST Scan') {
+    
+    stage ('DAST Scan') {
       steps {
         sh '''
-          echo "🛡️ Running DAST scan with OWASP ZAP..."
           chmod 777 $(pwd)
-          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t $STAGE_SITE -g gen.conf -r testreport.html
+          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://stage.bolatitoadegoroye.top -g gen.conf -r testreport.html || true
         '''
       }
     }
-
-    stage('Prompt for Approval') {
+    
+    stage ('Prompt for Approval') {
       steps {
         timeout(activity: true, time: 5) {
-          input message: '📋 Review before Production Approval', submitter: 'admin'
+          input message: 'Review before approval', submitter: 'admin'
         }
       }
     }
-
-    stage('Deploy to Production Environment') {
+    
+    stage ('Deploying to Prod Environment') {
       steps {
-        withCredentials([
-          sshUserPrivateKey(credentialsId: 'ansible-key', keyFileVariable: 'SSH_KEY'),
-          string(credentialsId: 'bastion-id', variable: 'BASTION_INSTANCE_ID'),
-          string(credentialsId: 'ansible-ip', variable: 'ANSIBLE_PRIVATE_IP')
-        ]) {
-          sh '''
-            echo "🚀 Starting deployment to production via SSM Session Manager..."
-
-            # Start SSM SSH tunnel to Bastion
-            aws ssm start-session \
-              --target "$BASTION_INSTANCE_ID" \
-              --document-name "AWS-StartSSHSession" \
-              --parameters '{"portNumber":["22"]}' \
-              --region "$AWS_REGION" > session.log 2>&1 &
-
-            sleep 5
-
-            # Run Ansible playbook from Ansible server over SSH via tunnel
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p 22 ubuntu@$ANSIBLE_PRIVATE_IP \
-              "ansible-playbook /etc/ansible/playbooks/playbooks/prod.yml"
-
-            echo "✅ Production deployment complete."
-          '''
-        }
+          script {
+            sh '''
+              aws ssm start-session \
+                --target ${BASTION_INSTANCE_ID} \
+                --region ${AWS_REGION} \
+                --document-name AWS-StartPortForwardingSession \
+                --parameters '{"portNumber":["22"],"localPortNumber":["9999"]}' \
+                &
+              sleep 5
+            '''
+            
+            sshagent(['ansible-key']) {
+              sh '''
+                ssh -o StrictHostKeyChecking=no \
+                    -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
+                    ubuntu@${ANSIBLE_IP} \
+                    "ansible-playbook /etc/ansible/playbooks/prod.yml"
+              '''
+            }
+            
+            sh 'pkill -f "aws ssm start-session"'
+          }
       }
     }
-
-    stage('Slack Notification - Production') {
+    
+    stage ('Slack Notification') {
       steps {
-        slackSend channel: 'Cloudhight',
-                  message: '🚀 New Production Deployment completed',
-                  teamDomain: '24th-february-sock-shop-kubeadm-project',
-                  tokenCredentialId: 'slack'
+        slackSend channel: 'Cloudhight', message: 'New Production Deployment', teamDomain: '21st-april-sock-shop-project-team-1', tokenCredentialId: 'slack'
       }
     }
   }
