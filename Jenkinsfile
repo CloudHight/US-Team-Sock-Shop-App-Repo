@@ -26,7 +26,7 @@ pipeline {
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
                     ubuntu@${ANSIBLE_IP} \
-                    "ansible-playbook /etc/ansible/playbooks/stage.yml"
+                    "ansible-playbook /etc/ansible/playbooks/deploy-stage.yml"
               '''
             }
             
@@ -38,7 +38,7 @@ pipeline {
     
     stage ('Slack Notification for prod') {
       steps {
-        slackSend channel: 'Cloudhight', message: 'New Stage Deployment', teamDomain: '21st-april-sock-shop-project-team-1', tokenCredentialId: 'slack'
+        slackSend channel: 'Cloudhight', message: 'New Stage Deployment', teamDomain: '8th-sept-2025-sock-shop-e-commerce-project-eu-team1', tokenCredentialId: 'slack'
       }
     }
     
@@ -46,7 +46,7 @@ pipeline {
       steps {
         sh '''
           chmod 777 $(pwd)
-          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://stage.merijourney.space -g gen.conf -r testreport.html || true
+          docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://stage.work-experience-2025.buzz -g gen.conf -r testreport.html || true
         '''
       }
     }
@@ -77,7 +77,7 @@ pipeline {
                 ssh -o StrictHostKeyChecking=no \
                     -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no ubuntu@localhost -p 9999" \
                     ubuntu@${ANSIBLE_IP} \
-                    "ansible-playbook /etc/ansible/playbooks/prod.yml"
+                    "ansible-playbook /etc/ansible/playbooks/deploy-prod.yml"
               '''
             }
             
@@ -88,7 +88,7 @@ pipeline {
     
     stage ('Slack Notification') {
       steps {
-        slackSend channel: 'Cloudhight', message: 'New Production Deployment', teamDomain: '21st-april-sock-shop-project-team-1', tokenCredentialId: 'slack'
+        slackSend channel: 'Cloudhight', message: 'New Production Deployment', teamDomain: '8th-sept-2025-sock-shop-e-commerce-project-eu-team1', tokenCredentialId: 'slack'
       }
     }
   }
